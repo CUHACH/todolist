@@ -96,7 +96,7 @@ h1 {
   color: #000;
 }
 
-.task.backLog { border-left: 4px solid #e2e2e2; }
+.task.backlog { border-left: 4px solid #e2e2e2; }
 
 .task.progress { border-left: 4px solid #d8e6ff; }
 
