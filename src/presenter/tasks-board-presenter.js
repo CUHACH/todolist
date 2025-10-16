@@ -2,40 +2,67 @@ import TaskColumnComponent from '../view/TaskColumn.js';
 import TaskComponent from '../view/Task.js';
 import TaskBoardComponent from '../view/TaskBoard.js'
 import { Status, StatusLabel } from "../const.js";
-import { render, RenderPosition } from '../framework/render.js';
+import { render } from '../framework/render.js';
 import ButtonClearComponent from '../view/ButtonClear.js';
+import PlugComponent from '../view/PlugComponent.js';
 
 export default class TaskBoardPresenter {
-    taskBoardComponent = new TaskBoardComponent()
-    taskColumnComponent = new TaskColumnComponent();
-    boardContainer = null;
-    taskmodel = null;
-    boardTask = [];
+    #taskBoardComponent = new TaskBoardComponent()
+    #boardContainer = null;
+    #taskModel = null;
+    #boardTask = [];
+    #plugComponent = new PlugComponent();
+    #buttonClearComponent = new ButtonClearComponent();
 
     constructor({ boardContainer, taskModel }) {
-        this.boardContainer = boardContainer;
-        this.taskModel = taskModel;
+        this.#boardContainer = boardContainer;
+        this.#taskModel = taskModel;
     }
 
 
     init() {
-        this.boardTask = [...this.taskModel.getTasks()]
+        this.#boardTask = [...this.#taskModel.tasks];
+        this.#renderBoard()
+    }
 
-        render(this.taskBoardComponent, this.boardContainer);
+    #renderTaskColumn(status, container) {
+        const taskColumnComponent = new TaskColumnComponent(StatusLabel[status], status);
+
+        render(taskColumnComponent, container)
+
+        return taskColumnComponent
+    }   
+
+    #renderTask(task, container) {
+        const taskComponent = new TaskComponent( task )
+        render(taskComponent, container);
+    }
+
+#renderPlugComponent(filteredTasks, container) {
+    if (filteredTasks.length === 0) {
+        const plugComponent = new PlugComponent();
+        render(plugComponent, container);
+    }
+}
+
+    #renderButtonClear(status, container) {
+        if (status === Status.TRASH) {
+            render(this.#buttonClearComponent, container)
+        }
+    }
+    #renderBoard() {
+        render(this.#taskBoardComponent, this.#boardContainer);
 
         Object.values(Status).forEach(element => {
-            const taskColumnComponent = new TaskColumnComponent(StatusLabel[element], element);
-            render(taskColumnComponent, this.taskBoardComponent.getElement());
-            const filteredTasks = this.boardTask.filter(task => task.status === element);
+            const taskColumnComponent = this.#renderTaskColumn(element, this.#taskBoardComponent.element);
+            const filteredTasks = this.#boardTask.filter(task => task.status === element);
+            this.#renderPlugComponent(filteredTasks, taskColumnComponent.element)
             for (let i = 0; i < filteredTasks.length; i++) {
 
-                render(new TaskComponent(filteredTasks[i]), taskColumnComponent.getElement());
+                this.#renderTask(filteredTasks[i], taskColumnComponent.element);
             }
-            if (element === Status.TRASH) {
-                render(new ButtonClearComponent(),taskColumnComponent.getElement());
-            }
-        })
-
-
+            this.#renderButtonClear(element, taskColumnComponent.element)
+        });
     }
+
 }

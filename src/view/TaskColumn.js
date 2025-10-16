@@ -1,5 +1,5 @@
-import { createElement } from '../framework/render.js';
-function createTaskListComponentTemplate(title,status) {
+import { AbstractComponent } from "../framework/AbstractComponent.js";
+function createTaskListComponentTemplate(title, status) {
     return (
         `   <div class="taskColumn">
                 <h2 class="${status}">${title}</h2>
@@ -8,28 +8,15 @@ function createTaskListComponentTemplate(title,status) {
 }
 
 
-export default class TaskColumnComponent {
-    constructor(title,status) {
+export default class TaskColumnComponent extends AbstractComponent {
+    constructor(title, status) {
+        super()
         this.title = title;
         this.status = status;
     }
 
-    getTemplate() {
-        return createTaskListComponentTemplate(this.title,this.status);
+    get template() {
+        return createTaskListComponentTemplate(this.title, this.status);
     }
 
-
-    getElement() {
-        if (!this.element) {
-            this.element = createElement(this.getTemplate());
-        }
-
-
-        return this.element;
-    }
-
-
-    removeElement() {
-        this.element = null;
-    }
 }

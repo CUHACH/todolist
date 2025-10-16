@@ -1,4 +1,4 @@
-import { createElement } from '../framework/render.js';
+import { AbstractComponent } from '../framework/AbstractComponent.js';
 function createButtonClearComponentTemplate() {
     return (
         `
@@ -7,22 +7,9 @@ function createButtonClearComponentTemplate() {
     );
 }
 
-export default class ButtonClearComponent {
-    getTemplate() {
+export default class ButtonClearComponent extends AbstractComponent {
+    get template() {
         return createButtonClearComponentTemplate();
     }
 
-    getElement() {
-        if (!this.element) {
-            this.element = createElement(this.getTemplate());
-        }
-
-
-        return this.element;
-    }
-
-
-    removeElement() {
-        this.element = null;
-    }
 }
