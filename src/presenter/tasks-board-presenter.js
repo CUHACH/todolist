@@ -10,18 +10,22 @@ export default class TaskBoardPresenter {
     #taskBoardComponent = new TaskBoardComponent()
     #boardContainer = null;
     #taskModel = null;
-    #boardTask = [];
-    #plugComponent = new PlugComponent();
-    #buttonClearComponent = new ButtonClearComponent();
 
-    constructor({ boardContainer, taskModel }) {
+    handleClearButtonClick = () => {
+        this.clearBucket();
+    };
+
+    #buttonClearComponent = new ButtonClearComponent({
+        onClick: this.handleClearButtonClick
+    });
+
+    constructor({ boardContainer, tasksModel }) {
         this.#boardContainer = boardContainer;
-        this.#taskModel = taskModel;
+        this.#taskModel = tasksModel;
+        this.#taskModel.addObserver(this.#handleModelChange.bind(this))
     }
 
-
     init() {
-        this.#boardTask = [...this.#taskModel.tasks];
         this.#renderBoard()
     }
 
@@ -31,31 +35,40 @@ export default class TaskBoardPresenter {
         render(taskColumnComponent, container)
 
         return taskColumnComponent
-    }   
+    }
 
     #renderTask(task, container) {
-        const taskComponent = new TaskComponent( task )
+        const taskComponent = new TaskComponent(task)
         render(taskComponent, container);
     }
 
-#renderPlugComponent(filteredTasks, container) {
-    if (filteredTasks.length === 0) {
-        const plugComponent = new PlugComponent();
-        render(plugComponent, container);
+    #renderPlugComponent(filteredTasks, container) {
+        if (filteredTasks.length === 0) {
+            const plugComponent = new PlugComponent();
+            render(plugComponent, container);
+        }
     }
-}
 
     #renderButtonClear(status, container) {
         if (status === Status.TRASH) {
             render(this.#buttonClearComponent, container)
         }
     }
+    createTask() {
+        const taskTitle = document.querySelector('input').value.trim();
+        if (!taskTitle)
+            return;
+
+        this.#taskModel.addTask(taskTitle);
+        document.querySelector('input').value = '';
+    }
+
     #renderBoard() {
         render(this.#taskBoardComponent, this.#boardContainer);
 
         Object.values(Status).forEach(element => {
             const taskColumnComponent = this.#renderTaskColumn(element, this.#taskBoardComponent.element);
-            const filteredTasks = this.#boardTask.filter(task => task.status === element);
+            const filteredTasks = this.tasks.filter(task => task.status === element);
             this.#renderPlugComponent(filteredTasks, taskColumnComponent.element)
             for (let i = 0; i < filteredTasks.length; i++) {
 
@@ -63,6 +76,23 @@ export default class TaskBoardPresenter {
             }
             this.#renderButtonClear(element, taskColumnComponent.element)
         });
+    }
+
+    clearBucket() {
+        this.#taskModel.clearBucket();
+    }
+
+    #handleModelChange() {
+        this.#clearBoard();
+        this.#renderBoard();
+    }
+
+    #clearBoard() {
+        this.#taskBoardComponent.element.innerHTML = '';
+    }
+
+    get tasks() {
+        return this.#taskModel.tasks;
     }
 
 }
