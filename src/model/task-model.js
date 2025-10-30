@@ -1,9 +1,26 @@
-import { tasks } from "../mock/task.js";
+import Observable from '../framework/observable.js';
+import { UpdateType, UserAction } from "../const.js";
 import generateID from "../utils.js";
 
-export default class TasksModel {
-    #boardTasks = tasks;
-    #observers = [];
+export default class TasksModel extends Observable{
+    #boardTasks = [];
+    #tasksApiService = null;    
+    constructor({tasksApiService}) {
+        super();
+        this.#tasksApiService = tasksApiService;
+        this.#tasksApiService.tasks.then((tasks) => {
+        console.log(tasks);
+   });
+    }
+    async init() {
+        try {
+            const tasks = await this.#tasksApiService.tasks;
+            this.#boardTasks = tasks;
+        } catch (err) {
+            this.#boardTasks = [];
+        }
+    this._notify(UpdateType.INIT);
+    }
 
     get tasks() {
         return this.#boardTasks;
@@ -13,63 +30,71 @@ export default class TasksModel {
         return this.tasks.filter(task => task.status === status);
     }
 
-    addTask(title) {
+    async addTask(title) {
         const newTask = {
             title,
             status: 'backlog',
             id: generateID(),
         };
 
-        this.#boardTasks.push(newTask);
-        this._notifyObservers();
-        return newTask;
+        try {
+         const createdTask = await this.#tasksApiService.addTask(newTask);
+        this.#boardTasks.push(createdTask);
+        this._notify(UserAction.ADD_TASK, createdTask);
+        return createdTask;
+         } catch (err) {
+        console.error('Ошибка при добавлении задачи на сервер:', err);
+        throw err;
+   }
+
     }
 
-    clearBucket() {
-        this.#boardTasks = this.#boardTasks.filter(task => task.status !== 'trash');
-        this._notifyObservers();
+    async clearBucket() {
+        const basketTasks = this.#boardTasks.filter(task => task.status === 'trash');
+        try {
+            await Promise.all(basketTasks.map(task => this.#tasksApiService.deleteTask(task.id)));
+
+            this.#boardTasks = this.#boardTasks.filter(task => task.status !== 'trash')
+            this._notify(UserAction.DELETE_TASK, {status:'trash'});
+        } catch (err) {
+            console.error('Ошибка при удаление задач из корзины на сервере: ', err);
+            throw err;
+        }
+
     }
 
-    addObserver(observer) {
-        this.#observers.push(observer);
+    async updateTaskStatus(taskId, newStatus) {
+        const taskIndex = this.#boardTasks.findIndex(task => task.id === taskId);
+        if (taskIndex === -1) return;
+        const [taskToMove] = this.#boardTasks.splice(taskIndex, 1);
+        const previousStatus = taskToMove.status; 
+        taskToMove.status = newStatus;
+        this.#boardTasks.push(taskToMove); 
+        try {
+            const updatedTask = await this.#tasksApiService.updateTask(taskToMove); 
+            Object.assign(taskToMove, updatedTask); 
+            this._notify(UserAction.UPDATE_TASK, taskToMove); 
+
+        } catch (err) {
+            console.error('Ошибка при обновлении задачи на сервере');
+            taskToMove.status = previousStatus;
+            this.init(); 
+
+            throw err;
+        }
     }
 
-    removeObserver(observer) {
-        this.#observers = this.#observers.filter((obs) => obs !== observer);
-    }
+    async removeTasks() {
+        const basketTasks = this.#boardTasks.filter(task => task.status === 'trash');
 
-    _notifyObservers() {
-        this.#observers.forEach((observer) => observer())
-    }
-    reorderTask(taskId, newStatus, newIndex) {
-        const oldIndex = this.#boardTasks.findIndex(task => task.id === taskId);
-        if (oldIndex === -1) return;
-
-        const [taskToMove] = this.#boardTasks.splice(oldIndex, 1);
-         taskToMove.status = newStatus;
-        const tasksInNewStatus = this.#boardTasks.filter(t => t.status === newStatus);
-        const elementAfter = tasksInNewStatus[newIndex];
-
-        let insertIndex;
-
-        if (!elementAfter) { 
-
-            this.#boardTasks.push(taskToMove);
-            this._notifyObservers();
-            return;
-        } 
-
-        else {
-            insertIndex = this.#boardTasks.findIndex(t => t.id === elementAfter.id);
-
-            if (insertIndex === -1) {
-                this.#boardTasks.push(taskToMove);
-            } else {
-                this.#boardTasks.splice(insertIndex, 0, taskToMove);
-             }
-         }
-
-         this._notifyObservers();
+        try {
+            await Promise.all(basketTasks.map(task => this.#tasksApiService.deleteTask(task.id)));
+            this.#boardTasks = this.#boardTasks.filter(task => task.status !== 'trash');
+            this._notify(UserAction.DELETE_TASK, { status: 'trash' });
+        } catch (err) {
+            console.error('Ошибка при очистке корзины: ', err);
+            throw err;
+        }
     }
 
 }

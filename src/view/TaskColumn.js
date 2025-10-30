@@ -28,32 +28,10 @@ export default class TaskColumnComponent extends AbstractComponent {
         });
 
         container.addEventListener('drop', (event) =>{
-            event.preventDefault();
-            
-            const taskId = event.dataTransfer.getData('text/plain');   
-            
-            const targetElement = event.target.closest('.task');
-
-            let newIndex = 0; 
-            
-            if (targetElement) {
-
-                const taskElements = [...container.children].filter(child => child.classList.contains('task'));
-                
-
-                const targetIndex = taskElements.indexOf(targetElement);
-                
-
-                newIndex = targetIndex; 
-            } else {
-
-                const tasksInColumn = container.querySelectorAll('.task');
-                newIndex = tasksInColumn.length;
-            }
-
-
-            onTaskDrop(taskId, this.status, newIndex);
-        })
+                event.preventDefault(); 
+                const taskId = event.dataTransfer.getData('text/plain');   
+                 onTaskDrop(taskId, this.status);
+            })
     }
 
 }
