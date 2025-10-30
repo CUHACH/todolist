@@ -96,7 +96,10 @@ h1 {
   width: 80%;
   color: #000;
 }
-
+.task.dragging {
+    opacity: 0.001; 
+    border: 1px dashed #2d7ff9; 
+}
 .nullTask {
     padding: 12px 8px;
     background-color: #EEF4FB;

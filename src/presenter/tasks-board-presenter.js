@@ -30,11 +30,15 @@ export default class TaskBoardPresenter {
     }
 
     #renderTaskColumn(status, container) {
-        const taskColumnComponent = new TaskColumnComponent(StatusLabel[status], status);
+        const taskColumnComponent = new TaskColumnComponent(StatusLabel[status], status, this.#handleTaskDrop.bind(this));
 
         render(taskColumnComponent, container)
 
         return taskColumnComponent
+    }
+
+    #handleTaskDrop(taskId, newStatus, newIndex){
+        this.#taskModel.reorderTask(taskId, newStatus, newIndex); 
     }
 
     #renderTask(task, container) {
